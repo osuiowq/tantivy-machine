@@ -26,7 +26,7 @@ use std::str;
 use prettytable::{Table, Row, Cell};
 
 fn simplify(a: f32) -> f32{
-    if (a > 0.2) {
+    if a > 0.2 {
         1.0
     } else {
         0.0
@@ -40,16 +40,20 @@ fn main() -> tantivy::Result<()> {
     let ak = calculate_lsa(tantivy_result);
     Ok(())
 }
-
-fn calculate_lsa(tantivy_result: Vec<TantivyDocTermFreq>) -> tantivy::Result<Matrix<f32>> {
+fn calculate_lsa(mut tantivy_result: Vec<TantivyDocTermFreq>) -> tantivy::Result<Matrix<f32>> {
+    
+    let max_docid = &tantivy_result.iter().max().unwrap().doc_id;
+    
+    //.iter().next().unwrap().doc_id;
 
     // Calculate number of documents.
-    let mut max_docid = 0;
-    for record in &tantivy_result {
-        if record.doc_id > max_docid {
-            max_docid = record.doc_id;
-        }
-    }
+    // let mut max_docid = 0;
+
+    // for record in &tantivy_result {
+    //     if record.doc_id > max_docid {
+    //         max_docid = record.doc_id;
+    //     }
+    // }
 
     // Map terms (strings) to ids (ints).
     let mut terms_map = HashMap::new();
@@ -66,8 +70,8 @@ fn calculate_lsa(tantivy_result: Vec<TantivyDocTermFreq>) -> tantivy::Result<Mat
     println!("max_docid {:?}", max_docid);
     println!("num_terms {:?}", num_terms);
 
-    // Create zeroed matrix with docs as rows and terms as columns.
-    let mut a = Matrix::<f32>::zeros(num_terms, max_docid as usize + 1);
+    // Create zeroed matrix with docs as columns and terms as rows.
+    let mut a = Matrix::<f32>::zeros(num_terms, *max_docid as usize + 1);
 
     // Iterate over result rows.
     for record in &tantivy_result {
@@ -108,7 +112,6 @@ fn calculate_lsa(tantivy_result: Vec<TantivyDocTermFreq>) -> tantivy::Result<Mat
     let ak = &t * a.clone();
 
     // calculate synonyms?
-    let threshold = 0.5;
     let ak_simplified = ak.clone().apply(&simplify);
 
     print_term_table(&terms_map, &a, "a");
@@ -167,7 +170,7 @@ fn print_term_table (terms_map: &HashMap<String, usize>, matrix: &Matrix<f32>, m
     table.printstd();
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct TantivyDocTermFreq {
     doc_id: DocId,
     term_freq: u32,
