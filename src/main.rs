@@ -87,10 +87,6 @@ fn calculate_lsa(
     terms_map: &HashMap<String, usize>, 
     num_terms: usize,
     max_docid: u32) -> tantivy::Result<Matrix<f32>> {
-    
-
-
-   
 
     //println!("terms map {:?}", terms_map);
     //println!("max_docid {:?}", max_docid);
@@ -109,18 +105,16 @@ fn calculate_lsa(
         let value = slice.iter_mut().next().unwrap();
         *value = record.term_freq as f32;
     }
-
-        print_term_table(&terms_map, &tf_matrix, "A");
     let lsa_matrix_1 = &tf_matrix * &tf_matrix.transpose();
     let lsa_matrix_2 = &tf_matrix.transpose() * &tf_matrix;
     let (_s_square_1, mut u,u_t) = lsa_matrix_1.clone().svd().unwrap();
     let (_s_square_2, _v, _v_t) = lsa_matrix_2.clone().svd().unwrap();;
-        print_matrix_table(_s_square_1, "s");
+    /*     print_matrix_table(_s_square_1, "s");
         print_matrix_table(_v.clone(), "v");
         print_matrix_table(u.clone(), "u");
         print_matrix_table(u_t.clone(), "u_t");
-
-     
+ */
+    //compute matrix_rank     
     let lu = FullPivLu::decompose(u.clone()).unwrap();
     let rank = lu.rank();
         println!("rank {:#?}", rank);
@@ -129,11 +123,11 @@ fn calculate_lsa(
     let k = 2;
     let t_k = u.sub_slice_mut([0, 0], u.rows(), k) * u.sub_slice_mut([0, 0], u.rows(), k).transpose();
     let tf_matrix_k = &t_k * tf_matrix.clone(); 
-    let meow = &tf_matrix_k - &tf_matrix;
-    print_term_table(&terms_map, &meow, "A-A_k");
+    let simplified_synonym_matrix = &tf_matrix_k - &tf_matrix;
+    //print_term_table(&terms_map, &meow, "A-A_k");
     print_term_table(&terms_map, &tf_matrix, "A");
     print_term_table(&terms_map, &tf_matrix_k, "A_k");
-    print_term_table(&terms_map, &meow, "T_k");
+    //print_term_table(&terms_map, &meow, "T_k");
     
     Ok(tf_matrix_k)
 
